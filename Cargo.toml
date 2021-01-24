@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 threadpool = "1.8.1"
+getopts = "0.2"
