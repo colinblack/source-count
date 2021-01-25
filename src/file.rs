@@ -10,8 +10,19 @@ pub struct File {
 }
 
 impl File {
+    pub fn new()-> File{
+       File{
+           files : Vec::new()
+       }
+    }
+
     //   fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> { //入参是函数指针
-    fn visit_dirs<F: Fn(&DirEntry)>(&self, dir: &Path, cb: &F) -> io::Result<()> {
+    fn visit_dirs<F: FnMut(&DirEntry, &mut Vec<String>)>(
+        &mut self,
+        dir: &Path,
+        cb: &mut F,
+    ) -> io::Result<()> {
+        //F必须为&mut
         //入参是闭包
         if dir.is_dir() {
             for entry in fs::read_dir(dir)? {
@@ -20,7 +31,7 @@ impl File {
                 if path.is_dir() {
                     self.visit_dirs(&path, cb)?; //方法前要用self
                 } else {
-                    cb(&entry);
+                    cb(&entry, &mut self.files);
                 }
             }
         }
@@ -31,8 +42,13 @@ impl File {
         let brief = format!("sage: {} FILE [options]", program);
         print!("{}", opts.usage(&brief));
     }
+    pub fn print_counter_files(&self){
+       for v in &self.files{
+          println!("{}", v);
+       }
+    }
 
-    fn get_counter_files(&mut self) -> Result<(), ()> {
+   pub fn get_counter_files(&mut self) -> Result<(), ()> {
         //mut self 结构体字段才能变为可变
         let args: Vec<String> = env::args().collect();
         let mut opts = Options::new();
@@ -51,17 +67,23 @@ impl File {
             return Err(());
         }
 
-        if matches.opt_present("o") {
-            self.files = matches.opt_strs("o");
+        if matches.opt_present("f") {
+            self.files = matches.opt_strs("f");
             return Ok(());
         }
 
         if matches.opt_present("p") {
-            let path = matches.opt_str("p");
-            self.visit_dirs(Path::new(&path), &|entry: &DirEntry| {
-                let path = entry.path().into_os_string().into_string().unwrap();
-                self.files.push(path)
+            let path = match matches.opt_str("p") {
+                None => "".to_string(),
+                Some(p) => p,
+            };
+
+            self.visit_dirs(Path::new(&path), &mut |entry: &DirEntry, v| {
+                let mut p = entry.path().into_os_string().into_string().unwrap();
+                v.push(p); //这里如果调用self.fils.push报错两次借用
             });
+
+            return Ok(());
         }
 
         Err(())

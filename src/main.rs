@@ -25,17 +25,19 @@ fn main() -> io::Result<()> {
         let mut entries = fs::read_dir(".")?
         .map(|res| res.map(|e| e.path()))
         .collect::<Result<Vec<_>, io::Error>>()?;
-
     entries.sort();
-
     for val in &mut entries{
         if let Some(res) = val.to_str(){
             println!("{}", res);
         }
     }
     */
-
-//    visit_dirs(Path::new("./"), &print);
+    let mut f = File::new();
+    match f.get_counter_files(){
+        Ok(_) => {}
+        Err(_) => {panic!("get counter files fail")}
+    }
+    f.print_counter_files();
 
     Ok(())
 }
@@ -43,7 +45,8 @@ fn main() -> io::Result<()> {
 #[cfg(test)]
 mod tests {
     #[test]
-    fn it_works() {
-        assert_eq!(2 + 2, 4);
+    fn do_work(){
+
     }
+
 }
