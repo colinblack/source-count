@@ -8,15 +8,21 @@ fn main() {
 
 }*/
 #![allow(unused)]
-pub mod file;
+mod file;
+mod task;
+mod worker;
+mod scheduler;
+
 use file::File;
 use std::io;
+use nix::sys::epoll::{epoll_create1, epoll_ctl};
 
 // one possible implementation of walking a directory only visiting files
 
 /*fn print(entry: &DirEntry) {
     //    println!("{:?}", entry.path());
 }*/
+
 
 
 fn main() -> io::Result<()> {
@@ -39,8 +45,11 @@ fn main() -> io::Result<()> {
     }
     f.print_counter_files();
 
+
     Ok(())
 }
+
+
 
 #[cfg(test)]
 mod tests {
