@@ -15,7 +15,6 @@ mod scheduler;
 
 use file::File;
 use std::io;
-use nix::sys::epoll::{epoll_create1, epoll_ctl, epoll_create};
 
 // one possible implementation of walking a directory only visiting files
 
@@ -38,12 +37,6 @@ fn main() -> io::Result<()> {
         }
     }
     */
-    let mut f = File::new();
-    match f.get_counter_files(){
-        Ok(_) => {}
-        Err(_) => {panic!("get counter files fail")}
-    }
-    f.print_counter_files();
 
     Ok(())
 }
