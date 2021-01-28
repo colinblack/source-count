@@ -9,9 +9,9 @@ fn main() {
 }*/
 #![allow(unused)]
 mod file;
+mod scheduler;
 mod task;
 mod worker;
-mod scheduler;
 
 use file::File;
 use std::io;
@@ -21,8 +21,6 @@ use std::io;
 /*fn print(entry: &DirEntry) {
     //    println!("{:?}", entry.path());
 }*/
-
-
 
 fn main() -> io::Result<()> {
     //TODO:使用函数式风格实现visit_dirs
@@ -41,13 +39,23 @@ fn main() -> io::Result<()> {
     Ok(())
 }
 
-
-
 #[cfg(test)]
 mod tests {
+    use mio::{Events, Poll};
+    use std::io;
+    use std::time::Duration;
+
     #[test]
-    fn do_work(){
+    fn do_work() -> io::Result<()> {
+        let mut events = Events::with_capacity(1024);
+        let mut poll = Poll::new()?;
 
+        poll.poll(&mut events, Some(Duration::from_millis(1000000)))?;
+
+        for event in events.iter() {
+            println!("Got an event for {:?}", event.token());
+        }
+
+        return Ok(());
     }
-
 }

@@ -10,10 +10,8 @@ pub struct File {
 }
 
 impl File {
-    pub fn new()-> File{
-       File{
-           files : Vec::new()
-       }
+    pub fn new() -> File {
+        File { files: Vec::new() }
     }
 
     //   fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> { //入参是函数指针
@@ -42,13 +40,13 @@ impl File {
         let brief = format!("sage: {} FILE [options]", program);
         print!("{}", opts.usage(&brief));
     }
-    pub fn print_counter_files(&self){
-       for v in &self.files{
-          println!("{}", v);
-       }
+    pub fn print_counter_files(&self) {
+        for v in &self.files {
+            println!("{}", v);
+        }
     }
 
-   pub fn get_counter_files(&mut self) -> Result<(), ()> {
+    pub fn get_counter_files(&mut self) -> Result<(), ()> {
         //mut self 结构体字段才能变为可变
         let args: Vec<String> = env::args().collect();
         let mut opts = Options::new();
