@@ -47,15 +47,6 @@ mod tests {
 
     #[test]
     fn do_work() -> io::Result<()> {
-        let mut events = Events::with_capacity(1024);
-        let mut poll = Poll::new()?;
-
-        poll.poll(&mut events, Some(Duration::from_millis(1000000)))?;
-
-        for event in events.iter() {
-            println!("Got an event for {:?}", event.token());
-        }
-
         return Ok(());
     }
 }
