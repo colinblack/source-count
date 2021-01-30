@@ -5,10 +5,12 @@ use mio::{Events, Interest, Poll, Token};
 use std::borrow::BorrowMut;
 use std::io::Result;
 use std::io::{self, Read, Write};
+use std::sync::atomic::Ordering::AcqRel;
+use std::sync::{Arc, Mutex};
 use threadpool::ThreadPool;
 
-struct Udp(&'static str, &'static str);
-const IP_PORT: Udp = Udp("127.0.0.1", "12865");
+pub struct Tcp(pub(crate) &'static str, pub(crate) &'static str);
+pub const IP_PORT: Tcp = Tcp("127.0.0.1", "12865");
 //const IP : &str = "127.0.0.1";  rust中定义字符串常量，不能使用String
 const SERVER: Token = Token(0);
 
@@ -20,7 +22,7 @@ pub struct Scheduler {
     poll: Option<Poll>,
     events: Option<Events>,
     listen_fd: Option<TcpListener>,
-    workers: Vec<Worker>,
+    workers: Arc<Mutex<Vec<Worker>>>, //Arc智能指针，用于多线程间共享变量, Arc不可变，需使用Mutex才能可变
 }
 
 impl Scheduler {
@@ -33,7 +35,7 @@ impl Scheduler {
             poll: None,
             events: None,
             listen_fd: None,
-            workers: Vec::with_capacity(t_n + 2),
+            workers: Arc::new(Mutex::new(Vec::with_capacity(t_n + 2))),
         }
     }
 
@@ -53,7 +55,7 @@ impl Scheduler {
         };
 
         for v in 2..(self.thread_size + 2) {
-            self.workers.push(Worker::new());
+            self.workers.lock().unwrap().push(Worker::new());
         }
 
         self.events = Some(Events::with_capacity(self.thread_size + 1));
@@ -80,14 +82,22 @@ impl Scheduler {
     }
 
     pub fn run(&mut self) -> Result<()> {
-
-        for _ in 0..self.thread_size {
-            self.thread_pool.execute(|| {
-                
+        for i in 2..(self.thread_size+2) {
+            let workers = Arc::clone(&self.workers);
+            self.thread_pool.execute(move || {
+                if let Some(worker) = workers.lock().unwrap().get_mut(i){
+                    worker.do_work();
+                }
             });
         }
 
         return Ok(());
+    }
+
+    pub fn dispatch() {
+
+
+
     }
 
     pub fn event_loop(&mut self) -> Result<()> {
@@ -119,7 +129,8 @@ impl Scheduler {
                             token,
                             Interest::READABLE,
                         )?;
-                        if let Some(worker) = self.workers.get_mut(token.0) {
+
+                        if let Some(worker) = self.workers.lock().unwrap().get_mut(token.0) {
                             worker.set_worker_id(token.0 as i32);
                         }
                     },
