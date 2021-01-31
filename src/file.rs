@@ -3,19 +3,31 @@ use std::fs::{self, DirEntry};
 use std::io;
 use std::path::Path;
 extern crate getopts;
+use crate::scheduler::DISPATCH_SIZE;
 use getopts::Options;
 
+enum FileType{
+    CPP,
+    SHELL
+}
+
+struct Node{
+    file : String,
+    name : String,
+    t : FileType
+}
+
 pub struct File {
-    files: Vec<String>,
+    nodes: Vec<Node>,
 }
 
 impl File {
     pub fn new() -> File {
-        File { files: Vec::new() }
+        File { nodes: Vec::new() }
     }
 
     //   fn visit_dirs(dir: &Path, cb: &dyn Fn(&DirEntry)) -> io::Result<()> { //入参是函数指针
-    fn visit_dirs<F: FnMut(&DirEntry, &mut Vec<String>)>(
+    fn visit_dirs<F: FnMut(&DirEntry, &mut Vec<Node>)>(
         &mut self,
         dir: &Path,
         cb: &mut F,
@@ -29,7 +41,7 @@ impl File {
                 if path.is_dir() {
                     self.visit_dirs(&path, cb)?; //方法前要用self
                 } else {
-                    cb(&entry, &mut self.files);
+                    cb(&entry, &mut self.nodes);
                 }
             }
         }
@@ -41,9 +53,9 @@ impl File {
         print!("{}", opts.usage(&brief));
     }
     pub fn print_counter_files(&self) {
-        for v in &self.files {
+   /*     for v in &self.files {
             println!("{}", v);
-        }
+        }*/
     }
 
     pub fn get_counter_files(&mut self) -> Result<(), ()> {
@@ -66,7 +78,19 @@ impl File {
         }
 
         if matches.opt_present("f") {
-            self.files = matches.opt_strs("f");
+            let mut path = matches.opt_strs("f");
+            for v in path{
+                let p = Path::new(&v);
+                if let Some(file) = p.file_name(){
+                }
+                if let Some(file_type) = p.extension(){
+                }
+                
+
+
+            }
+
+
             return Ok(());
         }
 
@@ -78,12 +102,22 @@ impl File {
 
             self.visit_dirs(Path::new(&path), &mut |entry: &DirEntry, v| {
                 let mut p = entry.path().into_os_string().into_string().unwrap();
-                v.push(p); //这里如果调用self.fils.push报错两次借用
+             //   v.push(p); //这里如果调用self.fils.push报错两次借用
             });
 
             return Ok(());
         }
 
         Err(())
+    }
+
+    fn get_file_info(&mut self, index: usize) -> (&[&str; DISPATCH_SIZE], &[&str; DISPATCH_SIZE]) {
+        //返回固定大小数组
+       // let Some(path) =  self.files.get(index..(index+DISPATCH_SIZE));
+
+
+
+
+        (&[""], &[""])
     }
 }

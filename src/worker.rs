@@ -31,8 +31,9 @@ impl Worker {
         };
 
         loop{
-            let left_size = 0;
-            match client.write(&[left_size]){
+          //  let left_size = 0;
+            // match client.write(&[left_size]){
+             match client.write(b"Req"){
                 Ok(_) =>{}
                 Err(e) => println!("worker req fail:{}", e)
             }
