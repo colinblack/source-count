@@ -8,16 +8,16 @@ use std::io::{self, Read, Write};
 use std::sync::atomic::Ordering::AcqRel;
 use std::sync::{Arc, Mutex};
 use threadpool::ThreadPool;
-use nix::sys::socket::connect;
+
 
 pub struct Tcp(pub(crate) &'static str, pub(crate) &'static str);
 pub const IP_PORT: Tcp = Tcp("127.0.0.1", "12865");
 //const IP : &str = "127.0.0.1";  rust中定义字符串常量，不能使用String
 const SERVER: Token = Token(0);
-pub const DISPATCH_SIZE : usize = 1;
+pub const DISPATCH_SIZE : usize = 2;
 
 pub struct Scheduler {
-    dispatch_count: usize, //已派发数量
+    task_finish: usize, //已派发数量
     files: File,
     thread_size: usize,
     thread_pool: ThreadPool,
@@ -30,7 +30,7 @@ pub struct Scheduler {
 impl Scheduler {
     pub fn new(t_n: usize) -> Scheduler {
         Scheduler {
-            dispatch_count: 0,
+            task_finish: 0,
             files: File::new(),
             thread_size: t_n,
             thread_pool: ThreadPool::new(t_n),

@@ -6,19 +6,30 @@ extern crate getopts;
 use crate::scheduler::DISPATCH_SIZE;
 use getopts::Options;
 
-enum FileType{
+enum FileType {
     CPP,
-    SHELL
+    SHELL,
+    None,
 }
 
-struct Node{
-    file : String,
-    name : String,
-    t : FileType
+struct Node {
+    pub path: String,
+    pub name: String,
+    pub t: FileType,
 }
 
 pub struct File {
     nodes: Vec<Node>,
+}
+
+impl Node {
+    fn new(p: String, n: String, t: FileType) -> Node {
+        Node {
+            path: p,
+            name: n,
+            t: t,
+        }
+    }
 }
 
 impl File {
@@ -53,10 +64,70 @@ impl File {
         print!("{}", opts.usage(&brief));
     }
     pub fn print_counter_files(&self) {
-   /*     for v in &self.files {
+        /*     for v in &self.files {
             println!("{}", v);
         }*/
     }
+
+    fn node_info(v: &String) -> (String, FileType) {
+        let p = Path::new(&v);
+
+        let f = p.file_name().unwrap().to_str().unwrap().to_string();
+        let t = p.extension().unwrap().to_str().unwrap().to_string();
+
+        let t_c = || {
+            let r = match t.as_str() {
+                "cpp" => FileType::CPP,
+                "cc" => FileType::CPP,
+                "c" => FileType::CPP,
+                "h" => FileType::CPP,
+                "hpp" => FileType::CPP,
+                "sh" => FileType::SHELL,
+                _ => FileType::None,
+            };
+            r
+        };
+
+        (f, t_c())
+    }
+
+    /*    fn insert_node(&mut self, path : Vec<String>){
+        for v in path {
+            //    let t = p.file_name().unwrap();  //这样能直接取出$OsStr
+            //下面这样写主要目的是v被借用，再push(v)会有“cannot move out of borrowing“ error
+            //参考 https://hermanradtke.com/2015/06/09/strategies-for-solving-cannot-move-out-of-borrowing-errors-in-rust.html
+            let (f, t) = {
+                let p = Path::new(&v);
+
+                 let f =  p.file_name().unwrap().to_str().unwrap().to_string();
+                 let t =   p.extension().unwrap().to_str().unwrap().to_string();
+
+                let t_c = || {
+                    let r = match t.as_str() {
+                        "cpp" => FileType::CPP,
+                        "cc" => FileType::CPP,
+                        "c" =>FileType::CPP,
+                        "h" => FileType::CPP,
+                        "hpp" => FileType::CPP,
+                        "sh" => FileType::SHELL,
+                        _ => FileType::None
+                    };
+                    r
+                };
+
+                (f,t)
+            };
+            /*  let p = Path::new(&v);
+                if let Some(file) = p.file_name(){
+                if let Some(file_type) = p.extension() {
+                  self.nodes.push( Node::new(v, file.to_str().unwrap().to_string(), FileType::CPP));  //p借用了v，p生命周期结束了才能move v, 所以这种写法error
+                }
+            }*/
+
+            self.nodes.push(Node::new(v, f, t_c()));
+        }
+
+    }*/
 
     pub fn get_counter_files(&mut self) -> Result<(), ()> {
         //mut self 结构体字段才能变为可变
@@ -78,18 +149,11 @@ impl File {
         }
 
         if matches.opt_present("f") {
-            let mut path = matches.opt_strs("f");
-            for v in path{
-                let p = Path::new(&v);
-                if let Some(file) = p.file_name(){
-                }
-                if let Some(file_type) = p.extension(){
-                }
-                
-
-
+            let path = matches.opt_strs("f");
+            for v in path {
+                let (f, t) = File::node_info(&v);
+                self.nodes.push(Node::new(v, f, t));
             }
-
 
             return Ok(());
         }
@@ -102,7 +166,8 @@ impl File {
 
             self.visit_dirs(Path::new(&path), &mut |entry: &DirEntry, v| {
                 let mut p = entry.path().into_os_string().into_string().unwrap();
-             //   v.push(p); //这里如果调用self.fils.push报错两次借用
+                let (f, t) = File::node_info(&p);
+                v.push(Node::new(p, f, t)); //这里如果调用self.v.push报错两次借用
             });
 
             return Ok(());
@@ -111,13 +176,9 @@ impl File {
         Err(())
     }
 
-    fn get_file_info(&mut self, index: usize) -> (&[&str; DISPATCH_SIZE], &[&str; DISPATCH_SIZE]) {
+   fn get_file_info(&mut self, index: usize) -> (&[Node]) {
         //返回固定大小数组
-       // let Some(path) =  self.files.get(index..(index+DISPATCH_SIZE));
-
-
-
-
-        (&[""], &[""])
+        let nodes =  self.nodes.get(index..(index + DISPATCH_SIZE)).unwrap();
+        nodes
     }
 }
