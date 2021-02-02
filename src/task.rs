@@ -1,17 +1,39 @@
-pub struct Task {
+use crate::file::Node;
+pub type Task=Node;
+
+/*pub struct Task {
     task_id: u64,
-    path   : String,
-    file   : String
+    path: & 'static str,  //这里引用的生命周期必须要是static, 才能传入线程池 参考 https://users.rust-lang.org/t/why-does-thread-spawn-need-static-lifetime-for-generic-bounds/4541/2
+    file: & 'static str,
+}*/
+
+pub trait  TaskBase{
+    
 }
 
 pub struct TaskCPP {
+    task : & 'static Task
+}
 
+
+impl TaskBase for TaskCPP{
+    fn new(t : &task) -> TaskCPP{
+        TaskCPP {
+            task : t
+        }
+    }
 }
 
 pub struct TaskShell {
-
+    task : & 'static Task
 
 }
+
+impl TaskBase for TaskShell{
+
+}
+
+
 
 
 
