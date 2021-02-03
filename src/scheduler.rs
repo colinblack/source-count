@@ -1,16 +1,16 @@
 use crate::file::File;
+use crate::file::FileType;
+use crate::task::{TaskBase, TaskCPP, TaskShell};
 use crate::worker::Worker;
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};
 use std::borrow::BorrowMut;
+use std::collections::HashMap;
 use std::io::Result;
 use std::io::{self, Read, Write};
 use std::sync::atomic::Ordering::AcqRel;
 use std::sync::{Arc, Mutex};
 use threadpool::ThreadPool;
-use std::collections::HashMap;
-use crate::file::FileType;
-
 
 pub struct Tcp(pub(crate) &'static str, pub(crate) &'static str);
 pub const IP_PORT: Tcp = Tcp("127.0.0.1", "12865");
@@ -27,9 +27,8 @@ pub struct Scheduler {
     events: Option<Events>,
     listen_fd: Option<TcpListener>,
     workers: Arc<Mutex<Vec<Worker>>>, //Arc智能指针，用于多线程间共享变量, Arc不可变，需使用Mutex才能可变
-    connections : HashMap<Token, TcpStream>
+    connections: HashMap<Token, TcpStream>,
 }
-
 
 impl Scheduler {
     pub fn new(t_n: usize) -> Scheduler {
@@ -42,7 +41,7 @@ impl Scheduler {
             events: None,
             listen_fd: None,
             workers: Arc::new(Mutex::new(Vec::with_capacity(t_n + 2))),
-            connections : HashMap::new()
+            connections: HashMap::new(),
         }
     }
 
@@ -97,7 +96,6 @@ impl Scheduler {
                 if let Some(worker) = workers.lock().unwrap().get_mut(i) {
                     worker.do_work();
                 }
-
             });
         }
 
@@ -107,7 +105,7 @@ impl Scheduler {
     pub fn dispatch(&mut self) {}
 
     pub fn event_loop(&mut self) -> Result<()> {
-        let mut buffer  = Vec::with_capacity(128);
+        let mut buffer = Vec::with_capacity(128);
         let mut unique_token = Token(SERVER.0 + 1);
         loop {
             self.poll
@@ -137,7 +135,7 @@ impl Scheduler {
                             Interest::READABLE,
                         )?;
 
-                       /*if let Some(worker) = self.workers.lock().unwrap().get_mut(token.0) {
+                        /*if let Some(worker) = self.workers.lock().unwrap().get_mut(token.0) {
                             worker.set_worker_id(token.0 as i32);
                         }*/
 
@@ -145,18 +143,31 @@ impl Scheduler {
                     },
                     token => {
                         //派发任务
-                        if let Some(connection) = self.connections.get_mut(&token){
+                        if let Some(connection) = self.connections.get_mut(&token) {
                             connection.read_to_end(&mut buffer);
                             let nodes = self.files.get_file_info(self.task_finish);
                             let worker = self.workers.lock().unwrap().get_mut(token.0).unwrap();
-                            for v in nodes{
-                                let task = match v.t{
-                                    FileType::CPP =>{}
-                                    FileType::SHELL=>{}
-                                    _ =>{}
+                            for v in nodes {
+                                // https://stackoverflow.com/questions/51429501/how-do-i-conditionally-check-if-an-enum-is-one-variant-or-another
+                                /*      if let FileType::CPP = v.t {
+                                } else if let FileType::SHELL = v.t {
+                                }*/
+
+                                let ff = || -> Box<dyn TaskBase> {
+                                    if let FileType::CPP = v.t {
+                                      Box::new(TaskCPP::new());   
+                                    } else if let FileType::SHELL = v.t {
+                                        Box::new(TaskShell::new());
+                                    }
                                 };
 
-                                worker.task_queue.0.send().unwrap();
+                                /*               let task = match v.t {
+                                                   FileType::CPP => Box::new(TaskCPP::new(v)),
+                                                   FileType::SHELL => Box::new(TaskShell::new(v)),
+                                                   _ => {}
+                                               };*/
+
+                                // worker.task_queue.0.send().unwrap();
                             }
 
                             self.task_finish += DISPATCH_SIZE;

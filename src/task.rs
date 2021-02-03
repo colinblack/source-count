@@ -8,25 +8,34 @@ pub type Task=Node;
 }*/
 
 pub trait  TaskBase{
-    
 }
 
 pub struct TaskCPP {
     task : & 'static Task
 }
 
-
-impl TaskBase for TaskCPP{
-    fn new(t : &task) -> TaskCPP{
+impl TaskCPP{
+   pub fn new(t : &'static Task) -> TaskCPP{
         TaskCPP {
             task : t
         }
     }
 }
+impl TaskBase for TaskCPP{
+
+}
 
 pub struct TaskShell {
     task : & 'static Task
 
+}
+
+impl TaskShell{
+    pub fn new(t : &'static Task) -> TaskShell{
+        TaskShell{
+            task : t
+        }
+    }
 }
 
 impl TaskBase for TaskShell{
