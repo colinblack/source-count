@@ -1,4 +1,5 @@
 use crate::file::Node;
+
 pub type Task=Node;
 
 /*pub struct Task {
@@ -8,6 +9,7 @@ pub type Task=Node;
 }*/
 
 pub trait  TaskBase{
+    fn print_info(&self);
 }
 
 pub struct TaskCPP {
@@ -22,7 +24,9 @@ impl TaskCPP{
     }
 }
 impl TaskBase for TaskCPP{
-
+    fn print_info(&self){
+        println!("{:?}", self.task);
+    }
 }
 
 pub struct TaskShell {
@@ -39,10 +43,26 @@ impl TaskShell{
 }
 
 impl TaskBase for TaskShell{
-
+    fn print_info(&self){
+        println!("{:?}", self.task);
+    }
 }
 
 
+pub struct TaskNone{
+
+}
+impl TaskNone{
+    pub fn new() -> TaskNone{
+        TaskNone{
+        }
+    }
+}
+
+impl TaskBase for TaskNone{
+    fn print_info(&self){
+    }
+}
 
 
 

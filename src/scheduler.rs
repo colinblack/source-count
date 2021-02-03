@@ -1,6 +1,6 @@
 use crate::file::File;
 use crate::file::FileType;
-use crate::task::{TaskBase, TaskCPP, TaskShell};
+use crate::task::{TaskBase, TaskCPP, TaskNone, TaskShell};
 use crate::worker::Worker;
 use mio::net::{TcpListener, TcpStream};
 use mio::{Events, Interest, Poll, Token};
@@ -104,7 +104,7 @@ impl Scheduler {
 
     pub fn dispatch(&mut self) {}
 
-    pub fn event_loop(&mut self) -> Result<()> {
+    pub fn event_loop(&'static mut self) -> Result<()> {
         let mut buffer = Vec::with_capacity(128);
         let mut unique_token = Token(SERVER.0 + 1);
         loop {
@@ -146,28 +146,35 @@ impl Scheduler {
                         if let Some(connection) = self.connections.get_mut(&token) {
                             connection.read_to_end(&mut buffer);
                             let nodes = self.files.get_file_info(self.task_finish);
-                            let worker = self.workers.lock().unwrap().get_mut(token.0).unwrap();
+                            // https://www.reddit.com/r/rust/comments/bv90s7/temporary_value_dropped_while_borrowed/
+                            //let mut worker = self.workers.lock().unwrap().get_mut(token.0).unwrap(); error
+
+                            let mut worker = self.workers.lock().unwrap();
+                            let worker = worker.get_mut(token.0).unwrap();
                             for v in nodes {
                                 // https://stackoverflow.com/questions/51429501/how-do-i-conditionally-check-if-an-enum-is-one-variant-or-another
                                 /*      if let FileType::CPP = v.t {
                                 } else if let FileType::SHELL = v.t {
                                 }*/
 
-                                let ff = || -> Box<dyn TaskBase> {
+                                let task_new = || -> Box<dyn TaskBase + Send + 'static> {
                                     if let FileType::CPP = v.t {
-                                      Box::new(TaskCPP::new());   
+                                        Box::new(TaskCPP::new(v))
                                     } else if let FileType::SHELL = v.t {
-                                        Box::new(TaskShell::new());
+                                        Box::new(TaskShell::new(v))
+                                    } else {
+                                        Box::new(TaskNone::new())
                                     }
                                 };
 
-                                /*               let task = match v.t {
-                                                   FileType::CPP => Box::new(TaskCPP::new(v)),
-                                                   FileType::SHELL => Box::new(TaskShell::new(v)),
-                                                   _ => {}
-                                               };*/
+                                //TODO match返回trait类型
+                                /* let task = match v.t {
+                                  FileType::CPP => Box::new(TaskCPP::new(v)),
+                                  FileType::SHELL => Box::new(TaskShell::new(v)),
+                                  _ => {}
+                                };*/
 
-                                // worker.task_queue.0.send().unwrap();
+                                worker.task_queue.0.send(task_new()).unwrap();
                             }
 
                             self.task_finish += DISPATCH_SIZE;

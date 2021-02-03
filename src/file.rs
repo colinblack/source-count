@@ -6,12 +6,13 @@ extern crate getopts;
 use crate::scheduler::DISPATCH_SIZE;
 use getopts::Options;
 
+#[derive(Debug)]
 pub enum FileType {
     CPP,
     SHELL,
     None,
 }
-
+#[derive(Debug)]
 pub struct Node {
     pub path: String,
     pub name: String,
@@ -176,7 +177,7 @@ impl File {
         Err(())
     }
 
-    pub fn get_file_info(&mut self, index: usize) -> (&[Node]) {
+    pub fn get_file_info(&'static self, index: usize) -> (&[Node]) {
         //返回固定大小数组
         let nodes = self.nodes.get(index..(index + DISPATCH_SIZE)).unwrap();
         nodes

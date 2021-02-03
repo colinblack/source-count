@@ -36,7 +36,9 @@ impl Worker {
                 Ok(_) => {}
                 Err(e) => println!("worker req fail:{}", e),
             }
-            for task in &self.task_queue.1 {}
+            for task in &self.task_queue.1 {
+                task.print_info();
+            }
         }
     }
 }
