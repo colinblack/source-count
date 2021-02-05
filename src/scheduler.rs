@@ -19,7 +19,6 @@ const SERVER: Token = Token(0);
 pub const DISPATCH_SIZE: usize = 5;
 
 pub struct Scheduler {
-    task_finish: usize, //已派发数量
     files: File,
     thread_size: usize,
     thread_pool: ThreadPool,
@@ -33,7 +32,6 @@ pub struct Scheduler {
 impl Scheduler {
     pub fn new(t_n: usize) -> Scheduler {
         Scheduler {
-            task_finish: 0,
             files: File::new(),
             thread_size: t_n,
             thread_pool: ThreadPool::new(t_n),
@@ -104,7 +102,7 @@ impl Scheduler {
 
     pub fn dispatch(&mut self) {}
 
-    pub fn event_loop(&'static mut self) -> Result<()> {
+    pub fn event_loop(&mut self) -> Result<()> {
         let mut buffer = Vec::with_capacity(128);
         let mut unique_token = Token(SERVER.0 + 1);
         loop {
@@ -145,23 +143,27 @@ impl Scheduler {
                         //派发任务
                         if let Some(connection) = self.connections.get_mut(&token) {
                             connection.read_to_end(&mut buffer);
-                            let nodes = self.files.get_file_info(self.task_finish);
+                            let nodes = self.files.get_nodes();
+                            if nodes.is_empty() {
+                                return Ok(());
+                            }
                             // https://www.reddit.com/r/rust/comments/bv90s7/temporary_value_dropped_while_borrowed/
                             //let mut worker = self.workers.lock().unwrap().get_mut(token.0).unwrap(); error
 
                             let mut worker = self.workers.lock().unwrap();
                             let worker = worker.get_mut(token.0).unwrap();
-                            for v in nodes {
+
+                            for _ in 0..DISPATCH_SIZE {
                                 // https://stackoverflow.com/questions/51429501/how-do-i-conditionally-check-if-an-enum-is-one-variant-or-another
                                 /*      if let FileType::CPP = v.t {
                                 } else if let FileType::SHELL = v.t {
                                 }*/
-
+                                let node = nodes.remove(0);
                                 let task_new = || -> Box<dyn TaskBase + Send + 'static> {
-                                    if let FileType::CPP = v.t {
-                                        Box::new(TaskCPP::new(v))
-                                    } else if let FileType::SHELL = v.t {
-                                        Box::new(TaskShell::new(v))
+                                    if let FileType::CPP = node.t {
+                                        Box::new(TaskCPP::new(node))
+                                    } else if let FileType::SHELL = node.t {
+                                        Box::new(TaskShell::new(node))
                                     } else {
                                         Box::new(TaskNone::new())
                                     }
@@ -176,8 +178,6 @@ impl Scheduler {
 
                                 worker.task_queue.0.send(task_new()).unwrap();
                             }
-
-                            self.task_finish += DISPATCH_SIZE;
                         }
                     }
                 }

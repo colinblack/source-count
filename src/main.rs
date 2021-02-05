@@ -19,7 +19,6 @@ use std::io;
 
 #[macro_use]
 
-
 // one possible implementation of walking a directory only visiting files
 
 /*fn print(entry: &DirEntry) {
@@ -39,14 +38,10 @@ fn main() -> io::Result<()> {
         }
     }
     */
-    scheduler : Scheduler = Scheduler::new(4);
-
-
-
-
-   // scheduler.initial();
-   // scheduler.run();
-   // scheduler.event_loop();
+    let mut scheduler: Scheduler = Scheduler::new(4);
+    scheduler.initial();
+    scheduler.run();
+    scheduler.event_loop();
 
     Ok(())
 }

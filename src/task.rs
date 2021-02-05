@@ -1,6 +1,6 @@
 use crate::file::Node;
 
-pub type Task=Node;
+pub type Task = Node;
 
 /*pub struct Task {
     task_id: u64,
@@ -8,61 +8,48 @@ pub type Task=Node;
     file: & 'static str,
 }*/
 
-pub trait  TaskBase{
+pub trait TaskBase {
     fn print_info(&self);
 }
 
 pub struct TaskCPP {
-    task : & 'static Task
+    task: Task,
 }
 
-impl TaskCPP{
-   pub fn new(t : &'static Task) -> TaskCPP{
-        TaskCPP {
-            task : t
-        }
+impl TaskCPP {
+    pub fn new(t: Task) -> TaskCPP {
+        TaskCPP { task: t }
     }
 }
-impl TaskBase for TaskCPP{
-    fn print_info(&self){
+impl TaskBase for TaskCPP {
+    fn print_info(&self) {
         println!("{:?}", self.task);
     }
 }
 
 pub struct TaskShell {
-    task : & 'static Task
-
+    task: Task,
 }
 
-impl TaskShell{
-    pub fn new(t : &'static Task) -> TaskShell{
-        TaskShell{
-            task : t
-        }
+impl TaskShell {
+    pub fn new(t: Task) -> TaskShell {
+        TaskShell { task: t }
     }
 }
 
-impl TaskBase for TaskShell{
-    fn print_info(&self){
+impl TaskBase for TaskShell {
+    fn print_info(&self) {
         println!("{:?}", self.task);
     }
 }
 
-
-pub struct TaskNone{
-
-}
-impl TaskNone{
-    pub fn new() -> TaskNone{
-        TaskNone{
-        }
+pub struct TaskNone {}
+impl TaskNone {
+    pub fn new() -> TaskNone {
+        TaskNone {}
     }
 }
 
-impl TaskBase for TaskNone{
-    fn print_info(&self){
-    }
+impl TaskBase for TaskNone {
+    fn print_info(&self) {}
 }
-
-
-

@@ -177,9 +177,8 @@ impl File {
         Err(())
     }
 
-    pub fn get_file_info(&'static self, index: usize) -> (&[Node]) {
+    pub fn get_nodes(&mut self) -> (&mut Vec<Node>) {
         //返回固定大小数组
-        let nodes = self.nodes.get(index..(index + DISPATCH_SIZE)).unwrap();
-        nodes
+        &mut self.nodes
     }
 }

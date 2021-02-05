@@ -7,7 +7,10 @@ use std::sync::mpsc::{channel, Receiver, Sender};
 
 pub struct Worker {
     worker_id: i32,
-   pub task_queue: (Sender<Box<dyn TaskBase + Send>>, Receiver<Box<dyn TaskBase + Send>>),  //Send 标记 trait 表明类型的所有权可以在线程间传递
+    pub task_queue: (
+        Sender<Box<dyn TaskBase + Send>>,
+        Receiver<Box<dyn TaskBase + Send>>,
+    ), //Send 标记 trait 表明类型的所有权可以在线程间传递
 }
 
 impl Worker {
