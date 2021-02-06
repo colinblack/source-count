@@ -169,8 +169,10 @@ impl Scheduler {
                                   FileType::SHELL => Box::new(TaskShell::new(v)),
                                   _ => {}
                                 };*/
-
-                                self.txs.get_mut(token.0 - 2).unwrap().send(task_new());
+                                match self.txs.get_mut(token.0 - 1).unwrap().send(task_new()){
+                                    Ok(()) => {},
+                                    Err(e) => {panic!("send task failed:{}", e)}
+                                }
                             }
                         }
                     }
