@@ -141,13 +141,13 @@ impl Scheduler {
                         if let Some(connection) = self.connections.get_mut(&token) {
                             connection.read_to_end(&mut buffer);
                             let nodes = self.files.get_nodes();
-                            if nodes.is_empty() {
-                                return Ok(());
-                            }
                             // https://www.reddit.com/r/rust/comments/bv90s7/temporary_value_dropped_while_borrowed/
                             //let mut worker = self.workers.lock().unwrap().get_mut(token.0).unwrap(); error
 
                             for _ in 0..DISPATCH_SIZE {
+                                if nodes.is_empty() {
+                                    return Ok(());
+                                }
                                 // https://stackoverflow.com/questions/51429501/how-do-i-conditionally-check-if-an-enum-is-one-variant-or-another
                                 /*      if let FileType::CPP = v.t {
                                 } else if let FileType::SHELL = v.t {

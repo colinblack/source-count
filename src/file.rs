@@ -5,6 +5,7 @@ use std::path::Path;
 extern crate getopts;
 use crate::scheduler::DISPATCH_SIZE;
 use getopts::Options;
+use std::ffi::OsStr;
 
 #[derive(Debug)]
 pub enum FileType {
@@ -74,7 +75,11 @@ impl File {
         let p = Path::new(&v);
 
         let f = p.file_name().unwrap().to_str().unwrap().to_string();
-        let t = p.extension().unwrap().to_str().unwrap().to_string();
+        let t = match p.extension(){
+            None => {String::from("")}
+            Some(p) => {p.to_str().unwrap().to_string()}
+        };
+
 
         let t_c = || {
             let r = match t.as_str() {

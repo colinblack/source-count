@@ -22,9 +22,12 @@ impl Worker {
             // match client.write(&[left_size]){
             match client.write(b"Req") {
                 Ok(_) => {}
-                Err(e) => println!("worker req fail:{}", e),
+                Err(e) => {
+              //     println!("worker req fail:{}", e);
+                    break;
+                }
             }
-            for task in rx.deref() {
+            for task in rx.deref().try_recv() {
                 task.print_info();
             }
         }
