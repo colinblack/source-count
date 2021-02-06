@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::io::Result;
 use std::io::{self, Read, Write};
 use std::sync::atomic::Ordering::AcqRel;
+use std::sync::mpsc::{channel, Receiver, Sender};
 use std::sync::{Arc, Mutex};
 use threadpool::ThreadPool;
 
@@ -25,7 +26,8 @@ pub struct Scheduler {
     poll: Option<Poll>,
     events: Option<Events>,
     listen_fd: Option<TcpListener>,
-    workers: Arc<Mutex<Vec<Worker>>>, //Arc智能指针，用于多线程间共享变量, Arc不可变，需使用Mutex才能可变
+    txs: Vec<Sender<Box<dyn TaskBase + Send>>>,
+    rxs: Vec<Receiver<Box<dyn TaskBase + Send>>>,
     connections: HashMap<Token, TcpStream>,
 }
 
@@ -38,7 +40,8 @@ impl Scheduler {
             poll: None,
             events: None,
             listen_fd: None,
-            workers: Arc::new(Mutex::new(Vec::with_capacity(t_n + 2))),
+            txs: Vec::with_capacity(t_n),
+            rxs: Vec::with_capacity(t_n),
             connections: HashMap::new(),
         }
     }
@@ -58,8 +61,10 @@ impl Scheduler {
             }
         };
 
-        for v in 2..(self.thread_size + 2) {
-            self.workers.lock().unwrap().push(Worker::new());
+        for i in 0..self.thread_size {
+            let (tx, rx) = channel();
+            self.txs.push(tx);
+            self.rxs.push(rx);
         }
 
         self.events = Some(Events::with_capacity(self.thread_size + 1));
@@ -86,14 +91,10 @@ impl Scheduler {
     }
 
     pub fn run(&mut self) -> Result<()> {
-        for i in 2..(self.thread_size + 2) {
-            let workers = Arc::clone(&self.workers);
-            let ccc = 10;
-
+        for i in 0..self.thread_size {
+            let mut rx = self.rxs.remove(0);
             self.thread_pool.execute(move || {
-                if let Some(worker) = workers.lock().unwrap().get_mut(i) {
-                    worker.do_work();
-                }
+                Worker::do_work(&mut rx);
             });
         }
 
@@ -133,10 +134,6 @@ impl Scheduler {
                             Interest::READABLE,
                         )?;
 
-                        /*if let Some(worker) = self.workers.lock().unwrap().get_mut(token.0) {
-                            worker.set_worker_id(token.0 as i32);
-                        }*/
-
                         self.connections.insert(token, connection);
                     },
                     token => {
@@ -149,9 +146,6 @@ impl Scheduler {
                             }
                             // https://www.reddit.com/r/rust/comments/bv90s7/temporary_value_dropped_while_borrowed/
                             //let mut worker = self.workers.lock().unwrap().get_mut(token.0).unwrap(); error
-
-                            let mut worker = self.workers.lock().unwrap();
-                            let worker = worker.get_mut(token.0).unwrap();
 
                             for _ in 0..DISPATCH_SIZE {
                                 // https://stackoverflow.com/questions/51429501/how-do-i-conditionally-check-if-an-enum-is-one-variant-or-another
@@ -176,7 +170,7 @@ impl Scheduler {
                                   _ => {}
                                 };*/
 
-                                worker.task_queue.0.send(task_new()).unwrap();
+                                self.txs.get_mut(token.0 - 2).unwrap().send(task_new());
                             }
                         }
                     }
