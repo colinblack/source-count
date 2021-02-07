@@ -28,6 +28,7 @@ impl Worker {
                 }
             }
             for task in rx.deref().try_recv() {
+                task.do_count();
                 task.print_info();
             }
         }
